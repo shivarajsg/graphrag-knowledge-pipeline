@@ -1,0 +1,13 @@
+# Core LLM (for live extraction mode)
+anthropic>=0.25.0
+
+# Entity normalization (optional, falls back to difflib if absent)
+rapidfuzz>=3.0.0
+
+# Retrieval backends (priority: semantic > sklearn > pure-Python)
+sentence-transformers>=2.2.0   # semantic retrieval (recommended)
+scikit-learn>=1.3.0
+numpy>=1.24.0
+
+# Testing
+pytest>=7.0.0

@@ -1,0 +1,199 @@
+{
+  "_comment": "Graph RAG Pipeline — Ontology Configuration. Edit this file to extend or change the graph vocabulary without touching any Python source code.",
+
+  "version": "1.0",
+
+  "entity_types": [
+    "Company",
+    "Platform",
+    "Service",
+    "Product",
+    "Feature",
+    "Partner",
+    "Capability",
+    "Programme",
+    "Acquisition",
+    "Event",
+    "Source",
+    "Person",
+    "Location",
+    "Financial",
+    "Entity"
+  ],
+
+  "relations": [
+    {
+      "name": "operates",
+      "description": "Company operates Platform",
+      "example": "Swiggy --operates--> Consumer Convenience Platform"
+    },
+    {
+      "name": "offers",
+      "description": "Platform or Service offers a Service or Product",
+      "example": "Platform --offers--> Food Delivery"
+    },
+    {
+      "name": "enabled_by",
+      "description": "Platform or Service is enabled by a Capability",
+      "example": "Platform --enabled_by--> Technology"
+    },
+    {
+      "name": "supported_by",
+      "description": "Platform is supported by external Partners",
+      "example": "Platform --supported_by--> Restaurant Partners"
+    },
+    {
+      "name": "includes",
+      "description": "Service or Programme includes a Product or Feature",
+      "example": "Swiggy One --includes--> Quick Bites"
+    },
+    {
+      "name": "integrated_surface",
+      "description": "Product is integrated with or into another Product",
+      "example": "Swiggy Mall --integrated_surface--> Swiggy Instamart"
+    },
+    {
+      "name": "executed_via",
+      "description": "A Service is executed via a specific Product",
+      "example": "Grocery Delivery --executed_via--> Swiggy Instamart"
+    },
+    {
+      "name": "acquired",
+      "description": "Company or Event acquired an Acquisition target",
+      "example": "Swiggy --acquired--> Dineout"
+    },
+    {
+      "name": "launched",
+      "description": "Event launched a Product, Service or Feature",
+      "example": "E2020 --launched--> Swiggy Instamart"
+    },
+    {
+      "name": "has_event",
+      "description": "Company has a timeline Event node",
+      "example": "Swiggy --has_event--> E2020"
+    },
+    {
+      "name": "expanded_to",
+      "description": "Company or Service expanded to a Location or Market",
+      "example": "Food Delivery --expanded_to--> 500 cities"
+    },
+    {
+      "name": "partnered_with",
+      "description": "Company partnered with an external party",
+      "example": "Swiggy --partnered_with--> HDFC Bank"
+    },
+    {
+      "name": "benefits_across",
+      "description": "Programme provides benefits across multiple Services",
+      "example": "Swiggy One --benefits_across--> Food Delivery"
+    },
+    {
+      "name": "feature",
+      "description": "Service has a specific Feature",
+      "example": "Food Delivery --feature--> Bolt"
+    },
+    {
+      "name": "described_in",
+      "description": "Entity is described in a Source document",
+      "example": "Swiggy --described_in--> Swiggy Limited IPO Prospectus"
+    },
+    {
+      "name": "events_experiences_surface",
+      "description": "Service provides a surface for events and experiences",
+      "example": "Dining Out --events_experiences_surface--> Swiggy Scenes"
+    },
+    {
+      "name": "expanded_surface",
+      "description": "Acquisition expanded the surface of a Service",
+      "example": "Dineout --expanded_surface--> Dining Out"
+    },
+    {
+      "name": "related_to",
+      "description": "Fallback relation — use only when no other relation fits",
+      "example": "EntityA --related_to--> EntityB"
+    }
+  ],
+
+  "relation_synonyms": {
+    "provides":                 "offers",
+    "delivers":                 "offers",
+    "services":                 "offers",
+    "supply":                   "offers",
+    "is part of":               "includes",
+    "encompasses":              "includes",
+    "contains":                 "includes",
+    "has":                      "includes",
+    "comprises":                "includes",
+    "integrated with":          "integrated_surface",
+    "integrated into":          "integrated_surface",
+    "integrated_with":          "integrated_surface",
+    "through":                  "executed_via",
+    "via":                      "executed_via",
+    "run through":              "executed_via",
+    "uses":                     "enabled_by",
+    "relies on":                "enabled_by",
+    "powered by":               "enabled_by",
+    "underpinned by":           "enabled_by",
+    "built on":                 "enabled_by",
+    "supports":                 "supported_by",
+    "partners with":            "supported_by",
+    "is supported by":          "supported_by",
+    "backed by":                "supported_by",
+    "bought":                   "acquired",
+    "purchased":                "acquired",
+    "merged with":              "acquired",
+    "integrated":               "acquired",
+    "took stake in":            "acquired",
+    "introduced":               "launched",
+    "released":                 "launched",
+    "debuted":                  "launched",
+    "started":                  "launched",
+    "created":                  "launched",
+    "rolled out":               "launched",
+    "expanded to":              "expanded_to",
+    "scaled to":                "expanded_to",
+    "grew to":                  "expanded_to",
+    "mentioned in":             "described_in",
+    "sourced from":             "described_in",
+    "comes from":               "described_in",
+    "cited in":                 "described_in",
+    "from":                     "described_in",
+    "benefits":                 "benefits_across",
+    "provides benefits across": "benefits_across",
+    "has feature":              "feature",
+    "sub-feature":              "feature",
+    "related to":               "related_to",
+    "associated with":          "related_to",
+    "connected to":             "related_to"
+  },
+
+  "confidence_scores": {
+    "llm":      0.90,
+    "rule":     0.75,
+    "regex":    0.65,
+    "fallback": 0.50
+  },
+
+  "event_tags": [
+    "Corporate",
+    "Launch",
+    "Pioneer",
+    "Acquisition",
+    "Milestone",
+    "Scale",
+    "Fundraise",
+    "Listing"
+  ],
+
+  "mermaid_sections": [
+    { "label": "Core Entities",             "types": ["Company", "Platform"] },
+    { "label": "Services",                  "types": ["Service"] },
+    { "label": "Products & Features",       "types": ["Product", "Feature"] },
+    { "label": "Partners",                  "types": ["Partner"] },
+    { "label": "Capabilities & Programmes", "types": ["Capability", "Programme"] },
+    { "label": "Acquisitions",              "types": ["Acquisition"] },
+    { "label": "Events / Timeline",         "types": ["Event"] },
+    { "label": "Sources",                   "types": ["Source"] },
+    { "label": "Other",                     "types": ["Person", "Location", "Financial", "Entity"] }
+  ]
+}
