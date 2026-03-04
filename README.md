@@ -1,358 +1,226 @@
-# GraphRAG Knowledge Graph Pipeline
+# GraphRAG Document Intelligence & Knowledge Graph Pipeline
 
-A modular pipeline that converts **unstructured company documents into a structured knowledge graph** for Graph-RAG systems.
-
-This project extracts entities, relations, events, and attributes from text chunks and builds a queryable knowledge graph with visualization and confidence scoring.
+A production-grade, document-grounded AI system combining **Knowledge Graph construction (GraphRAG)**, **PDF ingestion with layout preservation**, **evidence-grounded question answering**, **claim-level citation integrity & NLI verification**, **regulatory table reasoning**, and an **interactive Streamlit web application**.
 
 ---
 
-# Project Overview
+## Key Capabilities (Phase 0 – 5)
 
-Many enterprise documents such as:
-
-- IPO prospectus
-- annual reports
-- company descriptions
-- financial filings
-
-contain valuable information but are **unstructured text**.
-
-This system converts those documents into a **structured knowledge graph**, enabling:
-
-- relationship discovery
-- timeline analysis
-- knowledge retrieval
-- Graph RAG integration
+1. **Document Ingestion & Indexing (Phase 1)**: Native PDF text and table extraction (`PyMuPDF`), physical page tracking, character offsets, layout-block detection, and content-hash caching.
+2. **Evidence-Grounded Question Answering (Phase 2)**: Strict document-only question answering with controlled response statuses (`answered`, `partially_answered`, `insufficient_evidence`, `conflicting_evidence`).
+3. **Claim-Level Evidence Verification (Phase 3)**: Independent citation validation, verbatim quotation matching, and semantic NLI contradiction safeguards.
+4. **Advanced Regulatory & Table Reasoning (Phase 4)**: Three-valued logic (`SATISFIED`, `NOT_SATISFIED`, `UNKNOWN`), table column-association preservation (e.g. CITES Appendix I vs II), modifying footnotes, and explicit labeling of conditional taxonomic inferences.
+5. **Document Intelligence Web Application (Phase 5)**: Local Streamlit web application (`app.py`) for non-programmer users, featuring verbatim source inspection, PDF page rendering, and regulatory table inspection.
 
 ---
 
-# Pipeline Architecture
+## Architecture Overview
 
 ```
-Text Chunks
-      ↓
-Entity / Relation / Event Extraction
-      ↓
-Knowledge Graph Construction
-      ↓
-Graph JSON
-      ↓
-Mermaid Visualization
-      ↓
-Graph Query Engine
-```
-
----
-
-# Features
-
-### Entity Extraction
-Detects entities such as:
-
-- Company
-- Product
-- Service
-- Partner
-- Capability
-- Event
-
-Example:
-
-```
-Swiggy launched Instamart in 2020
-```
-
-Extracted:
-
-```
-Entity: Swiggy (Company)
-Entity: Instamart (Product)
+                      ┌────────────────────────────────────────┐
+                      │          Uploaded PDF Document         │
+                      └───────────────────┬────────────────────┘
+                                          │
+                               ┌──────────▼──────────┐
+                               │  PDFLoader (PyMuPDF)│
+                               │  Text & Table Parser│
+                               └──────────┬──────────┘
+                                          │
+                      ┌───────────────────▼────────────────────┐
+                      │    DocumentChunker & DocumentIndex     │
+                      │  (Deterministic Chunks & Provenance)   │
+                      └───────────────────┬────────────────────┘
+                                          │
+                    ┌─────────────────────┼─────────────────────┐
+                    │                     │                     │
+          ┌─────────▼─────────┐ ┌─────────▼─────────┐ ┌─────────▼─────────┐
+          │   TableReasoner   │ │MultiPassageAssembl│ │  GraphQueryEngine │
+          │ (CITES Appendices)│ │ (Cross-References)│ │  (Knowledge Graph)│
+          └─────────┬─────────┘ └─────────┬─────────┘ └─────────┬─────────┘
+                    │                     │                     │
+                    └─────────────────────┼─────────────────────┘
+                                          │
+                               ┌──────────▼──────────┐
+                               │  DocumentQAEngine   │
+                               │(Passage Retrieval & │
+                               │ Grounded Generation)│
+                               └──────────┬──────────┘
+                                          │
+                               ┌──────────▼──────────┐
+                               │  CitationValidator  │
+                               │ (Verbatim Provenance│
+                               │   & Page Bounds)    │
+                               └──────────┬──────────┘
+                                          │
+                               ┌──────────▼──────────┐
+                               │ClaimVerifierOrchestr│
+                               │ (NLI Verification & │
+                               │Contradiction Checks)│
+                               └──────────┬──────────┘
+                                          │
+                    ┌─────────────────────┴─────────────────────┐
+                    │                                           │
+          ┌─────────▼─────────┐                       ┌─────────▼─────────┐
+          │   Streamlit Web   │                       │    Unified CLI    │
+          │   App (app.py)    │                       │  (cli.py / main)  │
+          └───────────────────┘                       └───────────────────┘
 ```
 
 ---
 
-### Relation Extraction
-
-Identifies relationships between entities.
-
-Example:
-
-```
-Swiggy → launched → Instamart
-Swiggy → acquired → Dineout
-```
-
-Includes:
-
-- rule-based extraction
-- fallback relations
-- controlled relation vocabulary
-
----
-
-### Event Modeling
-
-Important business events are captured as nodes.
-
-Example:
-
-```
-Event_2020_launch_instamart
-```
-
-Allows queries like:
-
-- products launched in 2020
-- acquisition timeline
-
----
-
-### Entity Normalization
-
-Prevents duplicate nodes.
-
-Example:
-
-```
-Swiggy
-Swiggy Ltd
-Swiggy Limited
-```
-
-Normalized to:
-
-```
-Swiggy
-```
-
----
-
-### Attribute Extraction
-
-Extracts numeric information from text.
-
-Example:
-
-```
-Instamart expanded to 124 cities
-```
-
-Extracted:
-
-```
-cities = 124
-```
-
----
-
-### Confidence Scoring
-
-Each relationship includes a confidence score.
-
-Example:
-
-```json
-{
- "source": "swiggy",
- "relation": "acquired",
- "target": "dineout",
- "confidence": 0.9
-}
-```
-
-Confidence sources:
-
-- LLM extraction
-- rule-based extraction
-- regex extraction
-
----
-
-### Ontology Configuration
-
-Graph schema is configurable using:
-
-```
-ontology_config.json
-```
-
-Defines:
-
-- entity types
-- relation types
-- confidence scores
-- synonym mappings
-
----
-
-### Source Tracking
-
-Every entity is linked to the document chunk it came from.
-
-```
-Swiggy → described_in → Source_1
-```
-
-This improves traceability.
-
----
-
-### Query Engine
-
-The project includes a graph query engine that allows traversal queries.
-
-Examples:
-
-```
-products launched in 2020
-services offered by the company
-list of acquisitions
-```
-
-Example usage:
-
-```python
-engine.find_products_launched(2020)
-engine.find_services_offered()
-engine.find_acquisitions()
-```
-
----
-
-### CLI Interface
-
-Queries can be executed directly from terminal.
-
-```
-python main.py --query "products launched in 2020"
-python main.py --query "acquisitions"
-python main.py --query "services"
-```
-
----
-
-# Project Structure
-
-```
-graphrag_pipeline/
-│
-├── main.py
-├── ontology_config.json
-├── requirements.txt
-│
-├── graphrag/
-│   ├── extractor.py
-│   ├── classifier.py
-│   ├── graph_builder.py
-│   ├── query_engine.py
-│   ├── renderer.py
-│   ├── retriever.py
-│   └── utils.py
-│
-├── data/
-│   └── sample_chunks.json
-│
-├── outputs/
-│   ├── graph.json
-│   └── graph.mmd
-│
-└── tests/
-    └── test_pipeline.py
-```
-
----
-
-# Example Graph Output
-
-```
-Swiggy → launched → Instamart
-Swiggy → acquired → Dineout
-Platform → offers → Food Delivery
-```
-
----
-
-# Visualization
-
-Mermaid graph output:
-
-```
-graph TD
-Swiggy -->|launched| Instamart
-Swiggy -->|acquired| Dineout
-```
-
-To visualize:
-
-1. Open https://mermaid.live
-2. Paste contents of `graph.mmd`
-
----
-
-# Running the Project
-
-Install dependencies:
-
-```
+## Installation & Environment Setup
+
+### 1. Requirements
+- Python 3.10+ (tested on Python 3.11)
+- Modern web browser (Chrome, Edge, Firefox, Safari)
+
+### 2. Install Dependencies
+```bash
+git clone https://github.com/shivarajsg/graphrag-knowledge-pipeline.git
+cd graphrag-knowledge-pipeline
 pip install -r requirements.txt
 ```
 
-Run pipeline:
+### 3. API Key Configuration (Optional for Live Mode)
+The application includes a fully functional, offline **Deterministic Mock Engine** for testing with zero API costs.
 
+To enable **Live Anthropic Claude** generation:
+```bash
+# On Linux/macOS:
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
+export ANTHROPIC_MODEL="claude-sonnet-5-5"
+
+# On Windows (PowerShell):
+$env:ANTHROPIC_API_KEY="your-anthropic-api-key"
+$env:ANTHROPIC_MODEL="claude-sonnet-5-5"
 ```
+
+---
+
+## Launching the Web Application (Phase 5)
+
+Start the interactive Streamlit interface:
+
+```bash
+streamlit run app.py
+```
+
+Open `http://localhost:8501` in your browser.
+
+### Key Web UI Features:
+1. **Document Ingestion**:
+   - Upload any digital PDF (up to 50 MB).
+   - Fast content-hash caching avoids reprocessing unchanged documents.
+   - Or click **Load CITES Appendices (Instant Load)** to load the bundled 76-page treaty index.
+2. **Strict Document-Only Mode**:
+   - Guarantees answers derive strictly from the active document.
+   - Prevents outside hallucinations or unverified external knowledge.
+3. **Claim Verification Badges**:
+   - Each claim is individually labeled: `VERIFIED SUPPORTED`, `UNSUPPORTED`, `CONTRADICTED`, `INCONCLUSIVE`, or `NOT CHECKED`.
+4. **Verbatim Evidence & PDF Page Viewer**:
+   - View exact source quotes and page numbers.
+   - Click **View Physical Page in PDF** to render and inspect the original PDF page image inline.
+5. **Regulatory Table Reasoner (Phase 4)**:
+   - Search species (e.g. *Macaca silenus*, *Macaca mulatta*, *Euphorbia spp.*).
+   - Preserves table column associations (Appendix I vs II).
+   - Distinguishes direct document facts from conditional taxonomic inferences.
+
+---
+
+## Command-Line Interface (CLI)
+
+The repository provides a rich set of CLI tools for document processing, search, question answering, and table reasoning.
+
+### 1. PDF Ingestion & Indexing
+```bash
+# Ingest PDF and build index
+python -m graphrag.ingestion.cli --pdf CITES_E-Appendices.pdf --output outputs/cites_index.json
+```
+
+### 2. Search Indexed Document
+```bash
+# Search for keywords
+python -m graphrag.ingestion.cli --index outputs/cites_index.json --query "PRIMATES monkeys" --top-k 5
+```
+
+### 3. Ask Questions via CLI
+```bash
+# Ask question using deterministic mock engine
+python -m graphrag.ingestion.cli --index outputs/cites_index.json --ask "Can Rhesus Monkeys be exported to the USA for pharmaceutical research?" --mock
+
+# Ask question using live Anthropic Claude
+python -m graphrag.ingestion.cli --index outputs/cites_index.json --ask "What are the rules for trade in Felidae species?" --api-key "$ANTHROPIC_API_KEY"
+```
+
+### 4. Regulatory Table & Taxon Reasoning
+```bash
+# Direct table listing (e.g. Macaca silenus in Appendix I)
+python -m graphrag.ingestion.cli --index outputs/cites_index.json --table-lookup "Macaca silenus"
+
+# Unlisted taxon without external premise (returns insufficient evidence)
+python -m graphrag.ingestion.cli --index outputs/cites_index.json --table-lookup "Macaca mulatta"
+
+# Conditional taxonomic inference with explicit higher-taxon premise
+python -m graphrag.ingestion.cli --index outputs/cites_index.json --table-lookup "Macaca mulatta" --higher-taxon "PRIMATES"
+
+# Strict document-only policy (rejects unverified taxonomic assumptions)
+python -m graphrag.ingestion.cli --index outputs/cites_index.json --table-lookup "Macaca mulatta" --higher-taxon "PRIMATES" --strict
+```
+
+### 5. Multi-Passage Cross-Reference Tracing
+```bash
+# Trace cross-references, annotations, and footnotes starting from a chunk ID
+python -m graphrag.ingestion.cli --index outputs/cites_index.json --cross-refs doc_0c488ede5f9b_p065_c01
+```
+
+### 6. Original Knowledge Graph Pipeline
+```bash
+# Run entity extraction and graph building
 python main.py
-```
 
-Run with queries:
-
-```
+# Query the knowledge graph
 python main.py --query "products launched in 2020"
 ```
 
 ---
 
-# Test Coverage
+## Automated Test Suite
 
-The project includes **57 automated tests** verifying:
+The project includes **152 comprehensive automated tests** across all phases:
 
-- extraction
-- graph construction
-- entity normalization
-- confidence scoring
-- query engine
-- pipeline behavior
+| Phase | Test File | Test Count | Description |
+| :--- | :--- | :--- | :--- |
+| **Phase 0** | `tests/test_pipeline.py` | 60 | Baseline GraphRAG pipeline, extraction, and confidence scoring |
+| **Phase 1** | `tests/test_ingestion.py` | 9 | PDF loading, page extraction, chunking, and index serialization |
+| **Phase 2** | `tests/test_qa_engine.py` | 18 | Evidence-grounded QA, citation validation, and abstention |
+| **Phase 3** | `tests/test_qa_verifier.py` | 21 | Claim-level NLI verification and hallucination safeguards |
+| **Phase 4** | `tests/test_rule_engine.py` | 24 | Three-valued logic, table reasoner, provision graph, and CITES tests |
+| **Phase 5** | `tests/test_app_service.py` | 20 | Service layer, caching, isolation, and PDF page rendering |
+| **Total** | | **152** | **100% Pass Rate** |
 
-Run tests:
-
+Run the full test suite:
+```bash
+python -m pytest tests/
 ```
-python -m tests.test_pipeline
-```
 
 ---
 
-# Technologies Used
+## Known Limitations & Security Notes
 
-- Python
-- Knowledge Graph modeling
-- JSON graph storage
-- Regex extraction
-- Rule-based NLP
-- Mermaid graph visualization
-
----
-
-# Future Improvements
-
-Potential extensions:
-
-- Neo4j graph database integration
-- LLM-powered extraction
-- Graph embeddings
-- GraphRAG integration with LLMs
+1. **Scanned PDF / OCR Limitations**:
+   - The document ingestion pipeline utilizes native PDF text and font extraction via PyMuPDF.
+   - Scanned image-only PDFs without an embedded OCR text layer are flagged as `is_suspicious_scanned` and generate extraction warnings. OCR execution requires external Tesseract / OCR engines.
+2. **Strict Document-Only Grounding**:
+   - When information is absent from the supplied document (e.g., export permits for pharmaceutical research or specific Indian central-government approvals), the system is designed to **abstain** with `insufficient_evidence` rather than invent facts.
+3. **Taxonomic Inferences vs. Direct Facts**:
+   - Unlisted species are never assumed to belong to a higher taxon unless explicitly supplied as an external premise. When an external premise is provided in non-strict mode, it is clearly flagged as a `CONDITIONAL TAXONOMIC INFERENCE (NOT IN DOCUMENT VERBATIM)`.
+4. **Data Isolation**:
+   - Uploaded documents and generated indexes are stored locally under `outputs/uploads/` and `outputs/indexes/`.
+   - Switching active documents in the UI resets the session state and invalidates prior QA responses, preventing cross-document contamination.
 
 ---
 
-# Author
+## Author & Maintainer
 
 Shivraj  
-Computer Science Student | AI / ML Enthusiast
+Repository: [graphrag-knowledge-pipeline](https://github.com/shivarajsg/graphrag-knowledge-pipeline)
