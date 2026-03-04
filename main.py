@@ -35,10 +35,18 @@ import re
 import sys
 from pathlib import Path
 
+# Ensure UTF-8 output on Windows consoles
+if sys.platform == "win32":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 from graphrag.pipeline     import run_pipeline
 from graphrag.query_engine import GraphQueryEngine
+
 
 
 # ── Argument parser ───────────────────────────────────────────────────────────
@@ -55,6 +63,8 @@ def parse_args() -> argparse.Namespace:
                    help="Use pre-extracted mock data — no API key required")
     p.add_argument("--api-key",     default=os.environ.get("ANTHROPIC_API_KEY"),
                    help="Anthropic API key (or set ANTHROPIC_API_KEY env var)")
+    p.add_argument("--model",       default=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5-5"),
+                   help="Anthropic model identifier (default: claude-sonnet-5-5 or $ANTHROPIC_MODEL)")
     p.add_argument("--query",       default=None,
                    help="Natural-language graph query (e.g. 'products launched in 2020')")
     p.add_argument("--retrieve",    default=None,
@@ -227,6 +237,7 @@ def main() -> None:
         chunks,
         mock=args.mock,
         api_key=args.api_key,
+        model=args.model,
         query=args.retrieve,
         top_k=args.top_k,
         existing_graph=existing_graph,

@@ -32,6 +32,7 @@ def run_pipeline(
     *,
     mock: bool = True,
     api_key: Optional[str] = None,
+    model: Optional[str] = None,
     query: Optional[str] = None,
     top_k: int = 3,
     existing_graph: Optional[Dict[str, Any]] = None,
@@ -44,6 +45,7 @@ def run_pipeline(
     chunks         : list of chunk dicts (must have 'id' and 'text')
     mock           : use pre-extracted data instead of calling the LLM
     api_key        : Anthropic API key (required when mock=False)
+    model          : Anthropic model to use (optional, forwarded to extract)
     query          : optional retrieval query
     top_k          : number of chunks to return for retrieval
     existing_graph : an existing graph JSON to expand (pass None for fresh)
@@ -61,7 +63,7 @@ def run_pipeline(
     logger.info(f"[pipeline] Stage 1 – Extracting from {len(chunks)} chunk(s) …")
     extractions: List[Dict] = []
     for chunk in chunks:
-        extraction = extract(chunk, mock=mock, api_key=api_key)
+        extraction = extract(chunk, mock=mock, api_key=api_key, model=model)
         extractions.append(extraction)
         logger.info(
             f"  chunk {chunk.get('id','?')}: "

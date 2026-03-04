@@ -20,7 +20,10 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Any, Dict, List, Optional
+
+DEFAULT_MODEL: str = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5-5")
 
 from .ontology import ONTOLOGY_DESCRIPTION, CONTROLLED_RELATIONS, RELATION_SYNONYM_MAP
 from .utils import safe_parse_json, map_relation
@@ -78,7 +81,7 @@ def extract(
     *,
     mock: bool = False,
     api_key: Optional[str] = None,
-    model: str = "claude-sonnet-4-20250514",
+    model: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Extract entities, relations, and events from a single chunk.
@@ -88,7 +91,7 @@ def extract(
     chunk   : dict with at least 'id' and 'text'
     mock    : if True, return pre-baked data (no API call)
     api_key : Anthropic API key (required when mock=False)
-    model   : Anthropic model to use
+    model   : Anthropic model to use (defaults to ANTHROPIC_MODEL env var or DEFAULT_MODEL)
 
     Returns
     -------
@@ -105,8 +108,10 @@ def extract(
             "Pass --mock to run without an API key."
         )
 
-    raw = _llm_extract(chunk, api_key=api_key, model=model)
+    selected_model = model or DEFAULT_MODEL
+    raw = _llm_extract(chunk, api_key=api_key, model=selected_model)
     return _normalise_extraction(raw, chunk_id)
+
 
 
 # ── Mock mode ─────────────────────────────────────────────────────────────────

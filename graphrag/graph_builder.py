@@ -110,6 +110,7 @@ def build_graph(
         node_type: str,
         attributes: Dict,
         chunk_id: str,
+        type_method: str = "llm",
     ) -> str:
         """
         Add node if absent; merge attributes + provenance if present.
@@ -148,7 +149,7 @@ def build_graph(
                 "type":        node_type,
                 "label":       name,
                 "attributes":  enriched,
-                "type_method": ent.get("type_method", "llm") if "type_method" in ent else "llm",
+                "type_method": type_method,
                 "provenance":  [chunk_id] if chunk_id else [],
             }
         else:
@@ -232,6 +233,7 @@ def build_graph(
                 node_type=etype,
                 attributes=ent.get("attributes", {}),
                 chunk_id=chunk_id,
+                type_method=ent.get("type_method", "llm"),
             )
 
             if etype == "Company" and nid not in company_ids:
@@ -244,6 +246,7 @@ def build_graph(
                 node_type="Source",
                 attributes={},
                 chunk_id=chunk_id,
+                type_method="rule:Source",
             )
 
     # Second pass: relations
@@ -263,12 +266,12 @@ def build_graph(
             src_id = resolve_name(src_name)
             if src_id is None:
                 logger.debug(f"[build] Auto-creating node for '{src_name}' (unknown type)")
-                src_id = upsert_node(src_name, "Unknown", {}, chunk_id)
+                src_id = upsert_node(src_name, "Unknown", {}, chunk_id, type_method="fallback")
 
             tgt_id = resolve_name(tgt_name)
             if tgt_id is None:
                 logger.debug(f"[build] Auto-creating node for '{tgt_name}' (unknown type)")
-                tgt_id = upsert_node(tgt_name, "Unknown", {}, chunk_id)
+                tgt_id = upsert_node(tgt_name, "Unknown", {}, chunk_id, type_method="fallback")
 
             controlled = map_relation(relation)
             # Relations from LLM extraction get highest confidence

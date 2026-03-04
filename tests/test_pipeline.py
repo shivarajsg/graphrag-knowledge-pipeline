@@ -15,8 +15,16 @@ import sys
 import os
 from pathlib import Path
 
+# Ensure UTF-8 output on Windows consoles
+if sys.platform == "win32":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
+
 # Allow running from repo root
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
 
 from graphrag.extractor     import extract
 from graphrag.graph_builder  import build_graph
@@ -648,6 +656,64 @@ def test_query_engine_graph_summary():
           f"avg_conf={s['avg_edge_confidence']}")
 
 
+# ── Phase 0 Regression Tests ──────────────────────────────────────────────────
+
+def test_build_graph_source_only_no_entities():
+    """
+    Regression: build_graph should not raise UnboundLocalError/NameError when an
+    extraction contains sources but no entities (upsert_node variable-scope fix).
+    """
+    extractions = [
+        {
+            "chunk_id": "chunk_src_only",
+            "entities": [],
+            "relations": [],
+            "events": [],
+            "sources": ["Test Regulatory Source Document"],
+        }
+    ]
+    graph = build_graph(extractions)
+    assert graph["metadata"]["node_count"] == 1
+    node = graph["nodes"][0]
+    assert node["type"] == "Source"
+    assert node["label"] == "Test Regulatory Source Document"
+    assert node["type_method"] == "rule:Source"
+    assert node["provenance"] == ["chunk_src_only"]
+    print("  ✓ regression: source-only extraction without entities builds correctly")
+
+
+def test_build_graph_dangling_unknown_nodes():
+    """
+    Regression: Relations with unseen entities create Unknown nodes with fallback type_method.
+    """
+    extractions = [
+        {
+            "chunk_id": "chunk_dangling",
+            "entities": [],
+            "relations": [{"source": "EntityX", "target": "EntityY", "relation": "related_to"}],
+            "events": [],
+            "sources": [],
+        }
+    ]
+    graph = build_graph(extractions)
+    assert graph["metadata"]["node_count"] == 2
+    types = {n["type"] for n in graph["nodes"]}
+    assert types == {"Unknown"}
+    assert all(n["type_method"] == "fallback" for n in graph["nodes"])
+    print("  ✓ regression: dangling unknown nodes use fallback type_method")
+
+
+def test_extractor_model_configuration():
+    """
+    Regression: Ensure LLM model is configurable and DEFAULT_MODEL is loaded.
+    """
+    from graphrag.extractor import DEFAULT_MODEL
+    assert isinstance(DEFAULT_MODEL, str) and len(DEFAULT_MODEL) > 0
+    result = extract({"id": "5", "text": "..."}, mock=True, model="claude-sonnet-5-5")
+    assert result["chunk_id"] == "5"
+    print(f"  ✓ regression: model configuration works (default: {DEFAULT_MODEL})")
+
+
 # ── Runner ────────────────────────────────────────────────────────────────────
 
 def run_all_tests():
@@ -725,6 +791,10 @@ def run_all_tests():
         test_query_engine_graph_summary,
         # Pipeline
         test_run_pipeline_mock,
+        # Phase 0 Regression tests
+        test_build_graph_source_only_no_entities,
+        test_build_graph_dangling_unknown_nodes,
+        test_extractor_model_configuration,
     ]
 
     print("\n" + "=" * 55)
